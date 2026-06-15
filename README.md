@@ -14,7 +14,9 @@ functions, and innuendo. **No racial/identity/hate slurs.**
 - **Endless** mode — random word each round; press any key after a round to go
   again. Toggle with the button in the top bar.
 - On-screen keyboard + physical keyboard, so it works on phone and desktop.
-- Win/play stats are saved locally (`localStorage`).
+- **Stats** (📊 button): games played, win %, current streak, max streak, and a
+  guess-distribution chart. Daily-only (streaks count consecutive solved days);
+  the popup auto-opens when a Daily ends. Saved locally per browser.
 - **Progress is saved.** Your in-progress or finished game is stored locally and
   restored on reload — so the Daily can't be re-rolled by refreshing the page.
   Daily and Endless keep separate saves; the Daily save is keyed to the puzzle

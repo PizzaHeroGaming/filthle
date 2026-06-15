@@ -20,6 +20,8 @@ const messageEl = document.getElementById('message');
 const modeBtn = document.getElementById('mode-btn');
 const helpModal = document.getElementById('help-modal');
 const helpBtn = document.getElementById('help-btn');
+const statsModal = document.getElementById('stats-modal');
+const statsBtn = document.getElementById('stats-btn');
 const shareBtn = document.getElementById('share-btn');
 
 const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -210,6 +212,7 @@ function submitGuess() {
       persist();
       bounceRow(row);
       showEndState();
+      autoOpenStats(state.guesses.length);
       return;
     }
 
@@ -219,8 +222,15 @@ function submitGuess() {
       recordResult(false, null);
       persist();
       showEndState();
+      autoOpenStats(null);
     }
   });
+}
+
+// After a Daily ends, slide the stats up so the player sees their streak.
+function autoOpenStats(highlightGuess) {
+  if (state.mode !== 'daily') return;
+  setTimeout(() => openStats(highlightGuess), 1500);
 }
 
 function winLine(n) {
@@ -235,21 +245,101 @@ function winLine(n) {
   return `${lines[Math.min(n - 1, lines.length - 1)]} (${n}/${MAX_GUESSES})`;
 }
 
-// ---------- stats (localStorage) ----------
+// ---------- stats (localStorage, Daily only) ----------
 
-function recordResult(won, guessCount) {
+function loadStats() {
+  const base = {
+    played: 0,
+    wins: 0,
+    dist: {},
+    currentStreak: 0,
+    maxStreak: 0,
+    lastDay: null, // dailyNumber of the last Daily that was recorded
+  };
   try {
-    const stats = JSON.parse(localStorage.getItem('filthle-stats') || '{}');
-    stats.played = (stats.played || 0) + 1;
-    if (won) {
-      stats.wins = (stats.wins || 0) + 1;
-      stats.dist = stats.dist || {};
-      stats.dist[guessCount] = (stats.dist[guessCount] || 0) + 1;
-    }
+    const s = JSON.parse(localStorage.getItem('filthle-stats') || '{}');
+    return { ...base, ...s, dist: { ...base.dist, ...(s.dist || {}) } };
+  } catch {
+    return base;
+  }
+}
+
+function saveStats(stats) {
+  try {
     localStorage.setItem('filthle-stats', JSON.stringify(stats));
   } catch {
-    // storage unavailable (private mode / wrapper) — non-fatal, just skip stats
+    // storage unavailable — non-fatal
   }
+}
+
+// Record a finished Daily. Streaks count consecutive solved days; a miss or a
+// skipped day resets the current streak. Endless games are not tracked.
+function recordResult(won, guessCount) {
+  if (state.mode !== 'daily') return;
+  const stats = loadStats();
+  const today = dailyNumber();
+  if (stats.lastDay === today) return; // already recorded today (safety)
+
+  stats.played += 1;
+  if (won) {
+    stats.wins += 1;
+    stats.dist[guessCount] = (stats.dist[guessCount] || 0) + 1;
+    stats.currentStreak = stats.lastDay === today - 1 ? stats.currentStreak + 1 : 1;
+    stats.maxStreak = Math.max(stats.maxStreak, stats.currentStreak);
+  } else {
+    stats.currentStreak = 0;
+  }
+  stats.lastDay = today;
+  saveStats(stats);
+}
+
+// ---------- stats modal ----------
+
+function renderStats(highlightGuess) {
+  const s = loadStats();
+  document.getElementById('stat-played').textContent = s.played;
+  document.getElementById('stat-winrate').textContent = s.played
+    ? Math.round((100 * s.wins) / s.played)
+    : 0;
+  document.getElementById('stat-streak').textContent = s.currentStreak;
+  document.getElementById('stat-max').textContent = s.maxStreak;
+
+  const counts = [1, 2, 3, 4, 5, 6].map((n) => s.dist[n] || 0);
+  const max = Math.max(1, ...counts);
+  const container = document.getElementById('stat-dist');
+  container.innerHTML = '';
+  counts.forEach((c, i) => {
+    const n = i + 1;
+    const row = document.createElement('div');
+    row.className = 'dist-row' + (highlightGuess === n ? ' hot' : '');
+    const idx = document.createElement('span');
+    idx.className = 'idx';
+    idx.textContent = n;
+    const track = document.createElement('div');
+    track.className = 'track';
+    const bar = document.createElement('span');
+    bar.className = 'bar';
+    bar.style.width = `${Math.max(8, Math.round((c / max) * 100))}%`;
+    bar.textContent = c;
+    track.appendChild(bar);
+    row.append(idx, track);
+    container.appendChild(row);
+  });
+
+  document.getElementById('stat-empty').classList.toggle('hidden', s.played > 0);
+}
+
+function openStats(highlightGuess) {
+  renderStats(highlightGuess);
+  statsModal.classList.remove('hidden');
+}
+
+function closeStats() {
+  statsModal.classList.add('hidden');
+}
+
+function isStatsOpen() {
+  return !statsModal.classList.contains('hidden');
 }
 
 // ---------- share ----------
@@ -381,8 +471,16 @@ function loadSaved(mode) {
 // ---------- game lifecycle ----------
 
 function showEndState() {
-  if (state.won) flash(winLine(state.guesses.length), true);
-  else flash(`Out of guesses — it was ${state.answer.toUpperCase()}`, true);
+  if (state.won) {
+    let msg = winLine(state.guesses.length);
+    if (state.mode === 'daily') {
+      const streak = loadStats().currentStreak;
+      if (streak > 1) msg = `${streak}-day streak! ` + msg;
+    }
+    flash(msg, true);
+  } else {
+    flash(`Out of guesses — it was ${state.answer.toUpperCase()}`, true);
+  }
   showShare();
 }
 
@@ -494,9 +592,13 @@ window.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
 
-  // While the help modal is open, swallow keys (Esc closes it).
+  // While a modal is open, swallow game keys (Esc closes it).
   if (isHelpOpen()) {
     if (k === 'escape') closeHelp();
+    return;
+  }
+  if (isStatsOpen()) {
+    if (k === 'escape') closeStats();
     return;
   }
 
@@ -524,6 +626,12 @@ document.getElementById('help-play').addEventListener('click', closeHelp);
 helpModal.addEventListener('click', (e) => {
   // click on the dark overlay (outside the dialog) closes it
   if (e.target === helpModal) closeHelp();
+});
+
+statsBtn.addEventListener('click', () => openStats());
+document.getElementById('stats-close').addEventListener('click', closeStats);
+statsModal.addEventListener('click', (e) => {
+  if (e.target === statsModal) closeStats();
 });
 
 // Restore the last mode the player was in (defaults to daily).
