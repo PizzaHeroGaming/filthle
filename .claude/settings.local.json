@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(npm run *)",
+      "Bash(echo \"EXIT: $?\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:50421/)",
+      "Bash(curl -s http://localhost:50421/)",
+      "PowerShell(foreach \\($p in 5173,5174\\) { $c = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { $c.OwningProcess | Select-Object -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"killed PID $_ on $p\" } catch { \"couldn't kill $_\" } } } else { \"nothing on $p\" } })",
+      "Bash(curl -s -L \"https://raw.githubusercontent.com/tabatkins/wordle-list/main/words\" -o /tmp/wordle-words.txt)",
+      "Read(//tmp/**)",
+      "Bash(' + words.join\\('\\\\n'\\) + ')",
+      "Bash(curl -s -L \"https://raw.githubusercontent.com/tabatkins/wordle-list/main/words\" -o scripts/words-raw.txt)",
+      "Bash(node scripts/build-dictionary.mjs)",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  }
+}
