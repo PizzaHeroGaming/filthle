@@ -224,10 +224,28 @@ export function randomAnswer(rng = Math.random) {
   return ANSWER_POOL[i];
 }
 
-/** Day number since launch (2026-01-01 = #1). Used for the daily puzzle id. */
+// The Daily resets at midnight US Eastern (ET) for everyone, no matter their
+// own timezone. Using Intl with America/New_York means EST/EDT (daylight
+// saving) is handled for us — the offset shifts automatically.
+const ET_DATE_FMT = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** The calendar date in US Eastern as { y, m, d } (m is 1-12). */
+function easternParts(date) {
+  const parts = ET_DATE_FMT.formatToParts(date);
+  const get = (type) => Number(parts.find((p) => p.type === type).value);
+  return { y: get('year'), m: get('month'), d: get('day') };
+}
+
+/** Day number since launch (Eastern 2026-01-01 = #1). The daily puzzle id. */
 export function dailyNumber(date = new Date()) {
   const epoch = Date.UTC(2026, 0, 1);
-  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const { y, m, d } = easternParts(date);
+  const today = Date.UTC(y, m - 1, d);
   return Math.floor((today - epoch) / 86400000) + 1;
 }
 
