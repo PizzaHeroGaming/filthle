@@ -8,8 +8,8 @@
     />
     <meta name="theme-color" content="#15131a" />
     <title>FILTHLE — a filthy Wordle</title>
-    <script type="module" crossorigin src="./assets/index-dCIg0xsM.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DhvIr9zX.css">
+    <script type="module" crossorigin src="./assets/index-BN2x6Jmv.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B0AJRKdn.css">
   </head>
   <body>
     <div id="app">
@@ -24,6 +24,15 @@
             aria-label="How to play"
           >
             ?
+          </button>
+          <button
+            id="stats-btn"
+            class="icon-btn"
+            type="button"
+            title="Your stats"
+            aria-label="Your stats"
+          >
+            📊
           </button>
           <button
             id="mode-btn"
@@ -94,6 +103,23 @@
         <p class="tiny">Toggle modes with the button up top. Works with your keyboard or the on-screen one.</p>
 
         <button id="help-play" class="play-btn" type="button">Let's get filthy</button>
+      </div>
+    </div>
+
+    <div id="stats-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+      <div class="modal">
+        <button id="stats-close" class="modal-close" type="button" aria-label="Close">×</button>
+        <h2 id="stats-title">Your filthy stats</h2>
+        <div class="stat-grid">
+          <div><span id="stat-played" class="stat-num">0</span><span class="stat-label">Played</span></div>
+          <div><span id="stat-winrate" class="stat-num">0</span><span class="stat-label">Win %</span></div>
+          <div><span id="stat-streak" class="stat-num">0</span><span class="stat-label">Streak</span></div>
+          <div><span id="stat-max" class="stat-num">0</span><span class="stat-label">Max streak</span></div>
+        </div>
+        <h3>Guess distribution</h3>
+        <div id="stat-dist" class="dist"></div>
+        <p id="stat-empty" class="tiny hidden">Solve a Daily to start your stats.</p>
+        <p class="tiny">Counts Daily games only, and lives in this browser.</p>
       </div>
     </div>
 
