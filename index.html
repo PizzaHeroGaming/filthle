@@ -14,9 +14,25 @@
     <div id="app">
       <header class="topbar">
         <h1 class="logo">FILTH<span>LE</span></h1>
-        <button id="mode-btn" class="ghost-btn" type="button" title="Toggle mode">
-          Daily
-        </button>
+        <div class="topbar-actions">
+          <button
+            id="help-btn"
+            class="icon-btn"
+            type="button"
+            title="How to play"
+            aria-label="How to play"
+          >
+            ?
+          </button>
+          <button
+            id="mode-btn"
+            class="ghost-btn"
+            type="button"
+            title="Toggle mode"
+          >
+            Daily
+          </button>
+        </div>
       </header>
 
       <main>
@@ -25,6 +41,56 @@
       </main>
 
       <div id="keyboard" class="keyboard" aria-label="Keyboard"></div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="modal">
+        <button id="help-close" class="modal-close" type="button" aria-label="Close">×</button>
+        <h2 id="help-title">How to play</h2>
+        <p>
+          Guess the <strong>FILTHY WORD</strong> in 6 tries. Every answer is a
+          crude 5-letter word — you've been warned. 🍆
+        </p>
+        <ul class="rules">
+          <li>Each guess must be a real 5-letter word. Hit <strong>Enter</strong> to submit.</li>
+          <li>After each guess, the tiles change color to show how close you were.</li>
+        </ul>
+
+        <h3>What the colors mean</h3>
+        <div class="example">
+          <div class="example-row">
+            <span class="ex-tile correct">B</span><span class="ex-tile">O</span
+            ><span class="ex-tile">O</span><span class="ex-tile">B</span
+            ><span class="ex-tile">S</span>
+          </div>
+          <p><strong class="c-correct">B</strong> is in the word and in the right spot.</p>
+        </div>
+        <div class="example">
+          <div class="example-row">
+            <span class="ex-tile">F</span><span class="ex-tile present">A</span
+            ><span class="ex-tile">R</span><span class="ex-tile">T</span
+            ><span class="ex-tile">S</span>
+          </div>
+          <p><strong class="c-present">A</strong> is in the word but in the wrong spot.</p>
+        </div>
+        <div class="example">
+          <div class="example-row">
+            <span class="ex-tile">N</span><span class="ex-tile">A</span
+            ><span class="ex-tile absent">K</span><span class="ex-tile">E</span
+            ><span class="ex-tile">D</span>
+          </div>
+          <p><strong class="c-absent">K</strong> is not in the word at all.</p>
+        </div>
+
+        <h3>Modes</h3>
+        <ul class="rules">
+          <li><strong>Daily</strong> — one word a day, same for everyone.</li>
+          <li><strong>Endless</strong> — random words, replay forever. Press any key after a round to go again.</li>
+        </ul>
+        <p class="tiny">Toggle modes with the button up top. Works with your keyboard or the on-screen one.</p>
+
+        <button id="help-play" class="play-btn" type="button">Let's get filthy</button>
+      </div>
     </div>
 
     <script type="module" src="./src/main.js"></script>

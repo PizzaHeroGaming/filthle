@@ -11,6 +11,8 @@ const board = document.getElementById('board');
 const keyboardEl = document.getElementById('keyboard');
 const messageEl = document.getElementById('message');
 const modeBtn = document.getElementById('mode-btn');
+const helpModal = document.getElementById('help-modal');
+const helpBtn = document.getElementById('help-btn');
 
 const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
@@ -222,11 +224,46 @@ function toggleMode() {
   if (state.mode === 'endless') flash('Endless mode — new word each round');
 }
 
+// ---------- help modal ----------
+
+function openHelp() {
+  helpModal.classList.remove('hidden');
+}
+
+function closeHelp() {
+  helpModal.classList.add('hidden');
+  try {
+    localStorage.setItem('filthle-seen-help', '1');
+  } catch {
+    // storage unavailable — non-fatal
+  }
+}
+
+function isHelpOpen() {
+  return !helpModal.classList.contains('hidden');
+}
+
+function maybeShowHelpOnFirstVisit() {
+  let seen = null;
+  try {
+    seen = localStorage.getItem('filthle-seen-help');
+  } catch {
+    // storage unavailable — just show it
+  }
+  if (!seen) openHelp();
+}
+
 // ---------- wiring ----------
 
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
+
+  // While the help modal is open, swallow keys (Esc closes it).
+  if (isHelpOpen()) {
+    if (k === 'escape') closeHelp();
+    return;
+  }
 
   // In endless mode, any letter/enter after game-over starts a fresh round.
   if (
@@ -245,5 +282,14 @@ window.addEventListener('keydown', (e) => {
 
 modeBtn.addEventListener('click', toggleMode);
 
+helpBtn.addEventListener('click', openHelp);
+document.getElementById('help-close').addEventListener('click', closeHelp);
+document.getElementById('help-play').addEventListener('click', closeHelp);
+helpModal.addEventListener('click', (e) => {
+  // click on the dark overlay (outside the dialog) closes it
+  if (e.target === helpModal) closeHelp();
+});
+
 buildKeyboard();
 newGame();
+maybeShowHelpOnFirstVisit();
