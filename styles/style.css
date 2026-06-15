@@ -446,6 +446,32 @@ main {
   color: var(--muted);
 }
 
+/* ---- about ---- */
+.about-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+.about-link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--tile-empty);
+  border: 2px solid var(--tile-border);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+}
+.about-link:hover {
+  border-color: var(--correct);
+  color: var(--correct);
+}
+.about-legal {
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
 /* ---- stats ---- */
 .stat-grid {
   display: flex;

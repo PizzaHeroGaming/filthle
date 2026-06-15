@@ -27,7 +27,8 @@
       "Bash(git push *)",
       "Bash(gh api *)",
       "Bash(echo \"EXIT $?\")",
-      "Bash(echo \"LINT $?\")"
+      "Bash(echo \"LINT $?\")",
+      "WebFetch(domain:pizzaherogaming.github.io)"
     ]
   }
 }

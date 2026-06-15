@@ -22,6 +22,8 @@ const helpModal = document.getElementById('help-modal');
 const helpBtn = document.getElementById('help-btn');
 const statsModal = document.getElementById('stats-modal');
 const statsBtn = document.getElementById('stats-btn');
+const aboutModal = document.getElementById('about-modal');
+const aboutBtn = document.getElementById('about-btn');
 const shareBtn = document.getElementById('share-btn');
 
 const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -342,6 +344,20 @@ function isStatsOpen() {
   return !statsModal.classList.contains('hidden');
 }
 
+// ---------- about modal ----------
+
+function openAbout() {
+  aboutModal.classList.remove('hidden');
+}
+
+function closeAbout() {
+  aboutModal.classList.add('hidden');
+}
+
+function isAboutOpen() {
+  return !aboutModal.classList.contains('hidden');
+}
+
 // ---------- share ----------
 
 const EMOJI = { correct: '🟪', present: '🟩', absent: '⬛' };
@@ -601,6 +617,10 @@ window.addEventListener('keydown', (e) => {
     if (k === 'escape') closeStats();
     return;
   }
+  if (isAboutOpen()) {
+    if (k === 'escape') closeAbout();
+    return;
+  }
 
   // In endless mode, any letter/enter after game-over starts a fresh round.
   if (
@@ -632,6 +652,12 @@ statsBtn.addEventListener('click', () => openStats());
 document.getElementById('stats-close').addEventListener('click', closeStats);
 statsModal.addEventListener('click', (e) => {
   if (e.target === statsModal) closeStats();
+});
+
+aboutBtn.addEventListener('click', openAbout);
+document.getElementById('about-close').addEventListener('click', closeAbout);
+aboutModal.addEventListener('click', (e) => {
+  if (e.target === aboutModal) closeAbout();
 });
 
 // Restore the last mode the player was in (defaults to daily).
