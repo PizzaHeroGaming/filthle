@@ -5,7 +5,14 @@ import {
   updateKeyStates,
   isWin,
 } from './game.js';
-import { isValidGuess, randomAnswer, dailyAnswer } from './words.js';
+import {
+  isValidGuess,
+  randomAnswer,
+  dailyAnswer,
+  dailyNumber,
+} from './words.js';
+
+const SITE_URL = 'https://pizzaherogaming.github.io/filthle/';
 
 const board = document.getElementById('board');
 const keyboardEl = document.getElementById('keyboard');
@@ -13,6 +20,7 @@ const messageEl = document.getElementById('message');
 const modeBtn = document.getElementById('mode-btn');
 const helpModal = document.getElementById('help-modal');
 const helpBtn = document.getElementById('help-btn');
+const shareBtn = document.getElementById('share-btn');
 
 const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
@@ -22,8 +30,14 @@ const state = {
   guesses: [], // committed guesses (strings)
   current: '', // in-progress row
   over: false,
+  won: false,
+  revealing: false, // true while a row's flip animation plays
   keyStates: {}, // letter -> 'correct' | 'present' | 'absent'
 };
+
+// Flip-reveal timing (kept in one place so JS + CSS stay in sync).
+const FLIP_MS = 500; // full flip duration
+const FLIP_STAGGER = 280; // delay between consecutive tiles
 
 // ---------- rendering ----------
 
@@ -69,27 +83,54 @@ function makeKey(label, value, extra = '') {
   return btn;
 }
 
+// Render only the in-progress row. Committed rows are painted (with their
+// colors) by revealRow during the flip animation and then left untouched, so
+// nothing here can snap a revealed color or re-trigger an animation.
 function paintBoard() {
-  const rows = board.querySelectorAll('.row');
-  state.guesses.forEach((guess, r) => {
-    const result = scoreGuess(guess, state.answer);
-    const tiles = rows[r].querySelectorAll('.tile');
-    tiles.forEach((tile, c) => {
-      tile.textContent = guess[c].toUpperCase();
-      tile.classList.add('filled', result[c]);
-    });
-  });
-
-  // in-progress row
   const r = state.guesses.length;
-  if (r < MAX_GUESSES) {
-    const tiles = rows[r].querySelectorAll('.tile');
-    tiles.forEach((tile, c) => {
-      tile.textContent = (state.current[c] || '').toUpperCase();
-      tile.classList.toggle('filled', !!state.current[c]);
-      tile.classList.remove('correct', 'present', 'absent');
-    });
-  }
+  if (r >= MAX_GUESSES) return;
+  const tiles = board.querySelectorAll('.row')[r].querySelectorAll('.tile');
+  tiles.forEach((tile, c) => {
+    const ch = state.current[c];
+    tile.textContent = (ch || '').toUpperCase();
+    tile.classList.toggle('filled', !!ch);
+    // brief pop on the most-recently typed tile
+    if (ch && c === state.current.length - 1) {
+      tile.classList.remove('pop');
+      void tile.offsetWidth;
+      tile.classList.add('pop');
+    }
+  });
+}
+
+// Flip each tile in row `r` in sequence, revealing its color at the midpoint
+// of the flip. Calls onDone once the whole row has finished.
+function revealRow(r, result, onDone) {
+  state.revealing = true;
+  const tiles = board.querySelectorAll('.row')[r].querySelectorAll('.tile');
+  tiles.forEach((tile, c) => {
+    setTimeout(() => {
+      tile.classList.add('reveal');
+      // apply the color as the tile turns edge-on (halfway through the flip)
+      setTimeout(() => tile.classList.add(result[c]), FLIP_MS / 2);
+    }, c * FLIP_STAGGER);
+  });
+  const total = (tiles.length - 1) * FLIP_STAGGER + FLIP_MS;
+  setTimeout(() => {
+    state.revealing = false;
+    if (onDone) onDone();
+  }, total + 30);
+}
+
+// Little victory hop across the winning row.
+function bounceRow(r) {
+  const tiles = board.querySelectorAll('.row')[r].querySelectorAll('.tile');
+  tiles.forEach((tile, c) => {
+    setTimeout(() => {
+      tile.classList.add('jump');
+      setTimeout(() => tile.classList.remove('jump'), 500);
+    }, c * 90);
+  });
 }
 
 function paintKeyboard() {
@@ -122,7 +163,7 @@ function shakeRow() {
 // ---------- input ----------
 
 function handleKey(key) {
-  if (state.over) return;
+  if (state.over || state.revealing) return;
 
   if (key === 'enter') return submitGuess();
   if (key === 'backspace') {
@@ -150,27 +191,33 @@ function submitGuess() {
 
   const guess = state.current;
   const result = scoreGuess(guess, state.answer);
+  const row = state.guesses.length;
   state.guesses.push(guess);
   state.current = '';
-  updateKeyStates(state.keyStates, guess, result);
-  paintBoard();
-  paintKeyboard();
 
-  if (isWin(result)) {
-    state.over = true;
-    recordResult(true, state.guesses.length);
-    setTimeout(() => flash(winLine(state.guesses.length), true), 250);
-    return;
-  }
+  // Animate the flip; everything that reacts to the result happens after it.
+  revealRow(row, result, () => {
+    updateKeyStates(state.keyStates, guess, result);
+    paintKeyboard();
 
-  if (state.guesses.length >= MAX_GUESSES) {
-    state.over = true;
-    recordResult(false, null);
-    setTimeout(
-      () => flash(`Out of guesses — it was ${state.answer.toUpperCase()}`, true),
-      250
-    );
-  }
+    if (isWin(result)) {
+      state.over = true;
+      state.won = true;
+      recordResult(true, state.guesses.length);
+      bounceRow(row);
+      flash(winLine(state.guesses.length), true);
+      showShare();
+      return;
+    }
+
+    if (state.guesses.length >= MAX_GUESSES) {
+      state.over = true;
+      state.won = false;
+      recordResult(false, null);
+      flash(`Out of guesses — it was ${state.answer.toUpperCase()}`, true);
+      showShare();
+    }
+  });
 }
 
 function winLine(n) {
@@ -202,6 +249,66 @@ function recordResult(won, guessCount) {
   }
 }
 
+// ---------- share ----------
+
+const EMOJI = { correct: '🟪', present: '🟩', absent: '⬛' };
+
+function buildShareText() {
+  const score = state.won ? state.guesses.length : 'X';
+  const header =
+    state.mode === 'daily'
+      ? `FILTHLE #${dailyNumber()}  ${score}/${MAX_GUESSES}`
+      : `FILTHLE (endless)  ${score}/${MAX_GUESSES}`;
+  const grid = state.guesses
+    .map((g) =>
+      scoreGuess(g, state.answer)
+        .map((s) => EMOJI[s])
+        .join('')
+    )
+    .join('\n');
+  return `${header}\n\n${grid}\n${SITE_URL}`;
+}
+
+async function doShare() {
+  const text = buildShareText();
+  // Prefer the native share sheet on mobile / wrapped builds.
+  if (navigator.share) {
+    try {
+      await navigator.share({ text });
+      return;
+    } catch {
+      // user cancelled or share failed — fall through to clipboard
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    flash('Copied to clipboard');
+  } catch {
+    // last-resort fallback for older / non-secure contexts
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      flash('Copied to clipboard');
+    } catch {
+      flash('Could not copy');
+    }
+    ta.remove();
+  }
+}
+
+function showShare() {
+  shareBtn.classList.remove('hidden');
+}
+
+function hideShare() {
+  shareBtn.classList.add('hidden');
+}
+
 // ---------- game lifecycle ----------
 
 function newGame() {
@@ -210,11 +317,14 @@ function newGame() {
   state.guesses = [];
   state.current = '';
   state.over = false;
+  state.won = false;
+  state.revealing = false;
   state.keyStates = {};
   buildBoard();
   paintBoard();
   paintKeyboard();
   messageEl.textContent = '';
+  hideShare();
 }
 
 function toggleMode() {
@@ -281,6 +391,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 modeBtn.addEventListener('click', toggleMode);
+shareBtn.addEventListener('click', doShare);
 
 helpBtn.addEventListener('click', openHelp);
 document.getElementById('help-close').addEventListener('click', closeHelp);

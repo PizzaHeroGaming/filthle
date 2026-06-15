@@ -222,6 +222,83 @@ main {
   color: var(--muted);
 }
 
+/* ---- tile animations ---- */
+
+/* pop when a letter is typed */
+.tile.pop {
+  animation: pop 0.1s ease;
+}
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* card flip on reveal — color is added by JS at the 50% (edge-on) point */
+.tile.reveal {
+  animation: flip 500ms ease forwards;
+}
+@keyframes flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(-90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* victory hop across the winning row */
+.tile.jump {
+  animation: jump 0.5s ease;
+}
+@keyframes jump {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-20px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+  70% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* ---- share button ---- */
+.share-result-btn {
+  margin-top: 4px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 10px;
+  background: var(--correct);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(224, 33, 138, 0.35);
+}
+.share-result-btn:hover {
+  filter: brightness(1.1);
+}
+.share-result-btn.hidden {
+  display: none;
+}
+
 /* ---- shake on invalid ---- */
 .shake {
   animation: shake 0.4s;

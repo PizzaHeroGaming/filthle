@@ -224,14 +224,19 @@ export function randomAnswer(rng = Math.random) {
   return ANSWER_POOL[i];
 }
 
+/** Day number since launch (2026-01-01 = #1). Used for the daily puzzle id. */
+export function dailyNumber(date = new Date()) {
+  const epoch = Date.UTC(2026, 0, 1);
+  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((today - epoch) / 86400000) + 1;
+}
+
 /**
  * Deterministic "word of the day" so everyone sharing the game on the same
  * date gets the same answer. Seeded from the calendar date.
  */
 export function dailyAnswer(date = new Date()) {
-  const epoch = Date.UTC(2026, 0, 1);
-  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  const dayIndex = Math.floor((today - epoch) / 86400000);
+  const dayIndex = dailyNumber(date) - 1;
   const i =
     ((dayIndex % ANSWER_POOL.length) + ANSWER_POOL.length) % ANSWER_POOL.length;
   return ANSWER_POOL[i];
