@@ -194,6 +194,9 @@ function submitGuess() {
   const row = state.guesses.length;
   state.guesses.push(guess);
   state.current = '';
+  // Save immediately so a refresh mid-reveal still counts this guess —
+  // you can't refresh your way out of an attempt.
+  persist();
 
   // Animate the flip; everything that reacts to the result happens after it.
   revealRow(row, result, () => {
@@ -204,9 +207,9 @@ function submitGuess() {
       state.over = true;
       state.won = true;
       recordResult(true, state.guesses.length);
+      persist();
       bounceRow(row);
-      flash(winLine(state.guesses.length), true);
-      showShare();
+      showEndState();
       return;
     }
 
@@ -214,8 +217,8 @@ function submitGuess() {
       state.over = true;
       state.won = false;
       recordResult(false, null);
-      flash(`Out of guesses — it was ${state.answer.toUpperCase()}`, true);
-      showShare();
+      persist();
+      showEndState();
     }
   });
 }
@@ -332,29 +335,128 @@ function hideShare() {
   shareBtn.classList.add('hidden');
 }
 
+// ---------- persistence ----------
+
+const SAVE_KEYS = { daily: 'filthle-daily', endless: 'filthle-endless' };
+
+// Save the current game so a refresh restores it exactly.
+//  - daily   keyed by puzzle number (answer is derivable, so not stored)
+//  - endless stores the random answer (not otherwise recoverable)
+function persist() {
+  try {
+    const data = {
+      guesses: state.guesses,
+      over: state.over,
+      won: state.won,
+    };
+    if (state.mode === 'daily') data.day = dailyNumber();
+    else data.answer = state.answer;
+    localStorage.setItem(SAVE_KEYS[state.mode], JSON.stringify(data));
+    localStorage.setItem('filthle-mode', state.mode);
+  } catch {
+    // storage unavailable — game still works, just won't persist
+  }
+}
+
+// Return a restorable save for `mode`, or null. Daily saves from a previous
+// day are ignored (and cleared) so a new word is started.
+function loadSaved(mode) {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEYS[mode]) || 'null');
+    if (!s || !Array.isArray(s.guesses)) return null;
+    if (mode === 'daily') {
+      if (s.day !== dailyNumber()) {
+        localStorage.removeItem(SAVE_KEYS.daily);
+        return null;
+      }
+    } else if (typeof s.answer !== 'string') {
+      return null;
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+
 // ---------- game lifecycle ----------
 
-function newGame() {
-  state.answer =
-    state.mode === 'daily' ? dailyAnswer() : randomAnswer();
-  state.guesses = [];
+function showEndState() {
+  if (state.won) flash(winLine(state.guesses.length), true);
+  else flash(`Out of guesses — it was ${state.answer.toUpperCase()}`, true);
+  showShare();
+}
+
+// Instantly paint already-committed guesses (no flip) when restoring a save.
+function renderRestored() {
+  const rows = board.querySelectorAll('.row');
+  state.guesses.forEach((guess, r) => {
+    const result = scoreGuess(guess, state.answer);
+    const tiles = rows[r].querySelectorAll('.tile');
+    tiles.forEach((tile, c) => {
+      tile.textContent = guess[c].toUpperCase();
+      tile.classList.add('filled', result[c]);
+    });
+    updateKeyStates(state.keyStates, guess, result);
+  });
+}
+
+// Reset shared state and rebuild the empty board.
+function resetState(mode, answer) {
+  state.mode = mode;
+  state.answer = answer;
   state.current = '';
-  state.over = false;
-  state.won = false;
   state.revealing = false;
   state.keyStates = {};
+  modeBtn.textContent = mode === 'daily' ? 'Daily' : 'Endless';
   buildBoard();
-  paintBoard();
-  paintKeyboard();
   messageEl.textContent = '';
   hideShare();
 }
 
+// Start `mode`, restoring a saved game if one exists for it.
+function startGame(mode) {
+  const saved = loadSaved(mode);
+  const answer =
+    mode === 'daily'
+      ? dailyAnswer()
+      : saved
+        ? saved.answer
+        : randomAnswer();
+
+  resetState(mode, answer);
+  state.guesses = saved ? saved.guesses.slice() : [];
+  state.over = saved ? !!saved.over : false;
+  state.won = saved ? !!saved.won : false;
+
+  renderRestored();
+  paintBoard();
+  paintKeyboard();
+  if (state.over) showEndState();
+  persist();
+}
+
+// Endless only: abandon the current word and roll a fresh one.
+function freshEndless() {
+  try {
+    localStorage.removeItem(SAVE_KEYS.endless);
+  } catch {
+    // ignore
+  }
+  resetState('endless', randomAnswer());
+  state.guesses = [];
+  state.over = false;
+  state.won = false;
+  paintBoard();
+  paintKeyboard();
+  persist();
+}
+
 function toggleMode() {
-  state.mode = state.mode === 'daily' ? 'endless' : 'daily';
-  modeBtn.textContent = state.mode === 'daily' ? 'Daily' : 'Endless';
-  newGame();
-  if (state.mode === 'endless') flash('Endless mode — new word each round');
+  const next = state.mode === 'daily' ? 'endless' : 'daily';
+  startGame(next);
+  if (next === 'endless' && !state.over && state.guesses.length === 0) {
+    flash('Endless mode — new word each round');
+  }
 }
 
 // ---------- help modal ----------
@@ -404,7 +506,7 @@ window.addEventListener('keydown', (e) => {
     state.mode === 'endless' &&
     (k === 'enter' || /^[a-z]$/.test(k))
   ) {
-    newGame();
+    freshEndless();
     return;
   }
 
@@ -424,6 +526,15 @@ helpModal.addEventListener('click', (e) => {
   if (e.target === helpModal) closeHelp();
 });
 
+// Restore the last mode the player was in (defaults to daily).
+let initialMode = 'daily';
+try {
+  const m = localStorage.getItem('filthle-mode');
+  if (m === 'endless' || m === 'daily') initialMode = m;
+} catch {
+  // ignore
+}
+
 buildKeyboard();
-newGame();
+startGame(initialMode);
 maybeShowHelpOnFirstVisit();

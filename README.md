@@ -15,6 +15,10 @@ functions, and innuendo. **No racial/identity/hate slurs.**
   again. Toggle with the button in the top bar.
 - On-screen keyboard + physical keyboard, so it works on phone and desktop.
 - Win/play stats are saved locally (`localStorage`).
+- **Progress is saved.** Your in-progress or finished game is stored locally and
+  restored on reload — so the Daily can't be re-rolled by refreshing the page.
+  Daily and Endless keep separate saves; the Daily save is keyed to the puzzle
+  number and resets automatically when a new day's word comes up.
 
 ## Run it
 
