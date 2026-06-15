@@ -8,8 +8,8 @@
     />
     <meta name="theme-color" content="#15131a" />
     <title>FILTHLE — a filthy Wordle</title>
-    <script type="module" crossorigin src="./assets/index-zgDvmEbn.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B0AJRKdn.css">
+    <script type="module" crossorigin src="./assets/index-Bf5KX-b5.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DPLqPFpl.css">
   </head>
   <body>
     <div id="app">
@@ -33,6 +33,15 @@
             aria-label="Your stats"
           >
             📊
+          </button>
+          <button
+            id="about-btn"
+            class="icon-btn"
+            type="button"
+            title="About"
+            aria-label="About"
+          >
+            🍕
           </button>
           <button
             id="mode-btn"
@@ -120,6 +129,28 @@
         <div id="stat-dist" class="dist"></div>
         <p id="stat-empty" class="tiny hidden">Solve a Daily to start your stats.</p>
         <p class="tiny">Counts Daily games only, and lives in this browser.</p>
+      </div>
+    </div>
+
+    <div id="about-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <div class="modal">
+        <button id="about-close" class="modal-close" type="button" aria-label="Close">×</button>
+        <h2 id="about-title">About FILTHLE</h2>
+        <p>
+          A filthy little word game by <strong>Pizza Hero Gaming</strong> — a
+          solo indie studio. <em>Hand-crafted games with a slice of soul.</em> 🍕
+        </p>
+        <p class="tiny">Solo Indie Studio · Est. 2026</p>
+        <div class="about-links">
+          <a class="about-link" href="https://pizzaherogaming.github.io/PizzaHeroGaming/" target="_blank" rel="noopener noreferrer">🌐 Studio website</a>
+          <a class="about-link" href="https://discord.gg/WPsNeR7wyJ" target="_blank" rel="noopener noreferrer">💬 Join the Discord</a>
+          <a class="about-link" href="https://github.com/pizzaherogaming" target="_blank" rel="noopener noreferrer">🐙 GitHub</a>
+          <a class="about-link" href="mailto:pizzaherogaming@gmail.com">✉️ Email the studio</a>
+        </div>
+        <p class="tiny about-legal">
+          © 2026 Pizza Hero Gaming. All rights reserved.<br />
+          Crude content, for adults. Play nice. 🔞
+        </p>
       </div>
     </div>
 
