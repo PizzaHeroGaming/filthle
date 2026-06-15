@@ -269,36 +269,59 @@ function buildShareText() {
   return `${header}\n\n${grid}\n${SITE_URL}`;
 }
 
-async function doShare() {
-  const text = buildShareText();
-  // Prefer the native share sheet on mobile / wrapped builds.
-  if (navigator.share) {
-    try {
-      await navigator.share({ text });
-      return;
-    } catch {
-      // user cancelled or share failed — fall through to clipboard
-    }
-  }
+// Copy text to the clipboard, with a fallback for older / non-secure contexts.
+async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
-    flash('Copied to clipboard');
+    return true;
   } catch {
-    // last-resort fallback for older / non-secure contexts
+    // fall through to the legacy execCommand path
+  }
+  try {
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
-    try {
-      document.execCommand('copy');
-      flash('Copied to clipboard');
-    } catch {
-      flash('Could not copy');
-    }
+    const ok = document.execCommand('copy');
     ta.remove();
+    return ok;
+  } catch {
+    return false;
   }
+}
+
+let shareLabelTimer = null;
+function flashShareLabel(text) {
+  if (shareLabelTimer) clearTimeout(shareLabelTimer);
+  shareBtn.textContent = text;
+  shareLabelTimer = setTimeout(() => {
+    shareBtn.textContent = 'Share 📋';
+  }, 1900);
+}
+
+async function doShare() {
+  const text = buildShareText();
+
+  // On touch devices, the native share sheet is the natural way to fire it
+  // straight into Messages/Discord. On desktop we always copy so it can be
+  // pasted anywhere.
+  const isTouch =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches;
+
+  if (isTouch && navigator.share) {
+    try {
+      await navigator.share({ text });
+      return;
+    } catch {
+      // user cancelled or share failed — fall back to copying
+    }
+  }
+
+  const ok = await copyText(text);
+  flashShareLabel(ok ? 'Copied! ✓' : 'Copy failed');
 }
 
 function showShare() {
